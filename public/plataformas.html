@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Plataformas Online</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #111827; color: #f3f4f6; padding: 20px; min-height: 100vh; }
+        .contenedor { max-width: 900px; margin: 0 auto; }
+        
+        .header-tarea { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        h1 { color: #a78bfa; font-size: 2rem; }
+        .btn-volver { background-color: #4b5563; color: white; text-decoration: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; font-size: 0.9rem; }
+        .btn-volver:hover { background-color: #374151; }
+
+        .card-formulario { background-color: #1f2937; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); margin-bottom: 40px; }
+        .card-formulario h2 { margin-bottom: 20px; font-size: 1.5rem; }
+        .grid-formulario { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .campo-completo { grid-column: span 2; }
+        label { display: block; font-size: 0.9rem; margin-bottom: 5px; color: #d1d5db; }
+        input, textarea { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #4b5563; background-color: #374151; color: white; font-family: inherit; font-size: 1rem; }
+        input:focus, textarea:focus { outline: none; border-color: #a78bfa; box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.3); }
+        textarea { resize: vertical; min-height: 80px; }
+        button { cursor: pointer; border: none; font-weight: bold; font-size: 1rem; padding: 12px; border-radius: 5px; transition: background-color 0.3s, transform 0.1s; }
+        button:active { transform: scale(0.98); }
+        .btn-publicar { background-color: #8b5cf6; color: white; width: 100%; }
+        .btn-publicar:hover { background-color: #7c3aed; }
+        .btn-cancelar { background-color: #4b5563; color: white; width: 100%; margin-top: 10px; }
+        .btn-cancelar:hover { background-color: #374151; }
+        .oculto { display: none !important; }
+        
+        .titulo-seccion { margin-bottom: 20px; font-size: 1.5rem; }
+        .grid-contenidos { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card-contenido { background-color: #1f2937; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); border: 1px solid #374151; display: flex; flex-direction: column; justify-content: space-between; }
+        .card-contenido img { width: 100%; height: 180px; object-fit: cover; background-color: #374151; }
+        .card-info { padding: 15px; flex-grow: 1; }
+        .card-info h3 { color: #c4b5fd; margin-bottom: 5px; font-size: 1.2rem; }
+        .card-info .meta { font-size: 0.85rem; color: #9ca3af; margin-bottom: 10px; }
+        .card-info .desc { font-size: 0.95rem; color: #d1d5db; line-height: 1.4; }
+        .card-acciones { display: flex; gap: 8px; padding: 0 15px 15px 15px; }
+        .card-acciones button, .card-acciones a { flex: 1; text-align: center; text-decoration: none; font-size: 0.85rem; padding: 8px; border-radius: 5px; color: white; font-weight: bold; border: none; cursor: pointer; transition: background-color 0.3s; }
+        .btn-ver { background-color: #2563eb; } .btn-ver:hover { background-color: #1d4ed8; }
+        .btn-editar { background-color: #d97706; } .btn-editar:hover { background-color: #b45309; }
+        .btn-eliminar { background-color: #dc2626; } .btn-eliminar:hover { background-color: #b91c1c; }
+
+        @media (max-width: 600px) { .grid-formulario, .grid-contenidos { grid-template-columns: 1fr; } .campo-completo { grid-column: span 1; } }
+    </style>
+</head>
+<body>
+    <div class="contenedor">
+        <div class="header-tarea">
+            <h1>🌐 Gestión de Plataformas Online</h1>
+            <a href="/dashboard.html" class="btn-volver">← Volver al Panel</a>
+        </div>
+
+        <div class="card-formulario">
+            <h2 id="titulo-formulario">Nuevo Curso o Video</h2>
+            <form id="formulario">
+                <div class="grid-formulario">
+                    <div><label>Nombre del Curso o titulo del video </label><input type="text" id="titulo" required></div>
+                    <div><label>Instructor/artista</label><input type="text" id="artista" required></div>
+                    <div class="campo-completo"><label>Descripción del Curso/Video (mínimo 10 caracteres)</label><textarea id="descripcion" required></textarea></div>
+                    <div><label>Área de Estudio/Genero</label><input type="text" id="categoria" required></div>
+                    <div><label>Enlace al Video/Curso (YouTube, Vimeo, etc.)</label>
+                    <input type="url" id="urlVideo" required></div>
+                    <button type="submit" id="btn-submit" class="btn-publicar">Publicar Curso</button>
+                    <button type="button" id="btn-cancelar" class="btn-cancelar oculto" onclick="cancelarEdicion()">Cancelar Edición</button>
+                </div>
+            </form>
+        </div>
+
+        <h2 class="titulo-seccion">Cursos Publicados</h2>
+        <div id="lista-contenidos" class="grid-contenidos"></div>
+    </div>
+
+    <script>
+        const API_URL = '/api/contenidos';
+        let editandoId = null;
+
+        function getYouTubeID(url) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : null;
+        }
+
+        async function cargarContenidos() {
+            try {
+                const res = await fetch(API_URL);
+                const data = await res.json();
+                const contenedor = document.getElementById('lista-contenidos');
+                contenedor.innerHTML = '';
+
+                if (data.success && data.data.length > 0) {
+                    data.data.forEach(item => {
+                        const videoId = getYouTubeID(item.urlVideo);
+                        const miniatura = videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : 'https://via.placeholder.com/320x180?text=Sin+Recurso';
+                        contenedor.innerHTML += `
+                            <div class="card-contenido">
+                                <img src="${miniatura}" alt="${item.titulo}">
+                                <div class="card-info">
+                                    <h3>${item.titulo}</h3>
+                                    <p class="meta">👨‍🏫 ${item.artista} | 📚 ${item.categoria}</p>
+                                    <p class="desc">${item.descripcion}</p>
+                                </div>
+                                <div class="card-acciones">
+                                    <a href="${item.urlVideo}" target="_blank" class="btn-ver">Ver Recurso</a>
+                                    <button onclick="prepararEdicion('${item.id}')" class="btn-editar">Editar</button>
+                                    <button onclick="eliminarContenido('${item.id}')" class="btn-eliminar">Eliminar</button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    contenedor.innerHTML = '<p style="color: #9ca3af;">No hay cursos aún. ¡Crea el primero!</p>';
+                }
+            } catch (error) { console.error("Error cargando cursos:", error); }
+        }
+
+        document.getElementById('formulario').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const contenido = {
+                titulo: document.getElementById('titulo').value,
+                artista: document.getElementById('artista').value,
+                descripcion: document.getElementById('descripcion').value,
+                categoria: document.getElementById('categoria').value,
+                urlVideo: document.getElementById('urlVideo').value
+            };
+            try {
+                let res;
+                if (editandoId) {
+                    res = await fetch(`${API_URL}/${editandoId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(contenido) });
+                } else {
+                    res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(contenido) });
+                }
+                const data = await res.json();
+                if (data.success) {
+                    alert(editandoId ? '¡Curso actualizado! 🚀' : '¡Curso guardado! 🚀');
+                    cancelarEdicion();
+                    cargarContenidos();
+                } else {
+                    alert('Error: ' + (data.errors ? data.errors[0].msg : data.message));
+                }
+            } catch (error) { alert('Error de conexión con el servidor'); }
+        });
+
+        async function prepararEdicion(id) {
+            try {
+                const res = await fetch(`${API_URL}/${id}`);
+                const data = await res.json();
+                if (data.success) {
+                    const item = data.data;
+                    document.getElementById('titulo').value = item.titulo;
+                    document.getElementById('artista').value = item.artista;
+                    document.getElementById('descripcion').value = item.descripcion;
+                    document.getElementById('categoria').value = item.categoria;
+                    document.getElementById('urlVideo').value = item.urlVideo;
+                    editandoId = id;
+                    document.getElementById('titulo-formulario').innerText = '✏️ Editando Curso';
+                    document.getElementById('btn-submit').innerText = 'Actualizar Curso';
+                    document.getElementById('btn-cancelar').classList.remove('oculto');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            } catch (error) { alert('Error al cargar el curso para editar'); }
+        }
+
+        function cancelarEdicion() {
+            editandoId = null;
+            document.getElementById('formulario').reset();
+            document.getElementById('titulo-formulario').innerText = 'Nuevo Curso';
+            document.getElementById('btn-submit').innerText = 'Publicar Curso';
+            document.getElementById('btn-cancelar').classList.add('oculto');
+        }
+
+        async function eliminarContenido(id) {
+            if (!confirm('¿Estás seguro de que deseas eliminar este curso?')) return;
+            try {
+                const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (data.success) { alert('Curso eliminado 🗑️'); cargarContenidos(); } else { alert('Error al eliminar: ' + data.message); }
+            } catch (error) { alert('Error de conexión al eliminar'); }
+        }
+
+        cargarContenidos();
+    </script>
+</body>
+</html>

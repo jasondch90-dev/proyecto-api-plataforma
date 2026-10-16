@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Usuario</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #111827;
+            color: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .registro-card {
+            background-color: #1f2937;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 400px;
+        }
+        h1 { text-align: center; color: #a78bfa; margin-bottom: 30px; }
+        label { display: block; margin-bottom: 5px; color: #d1d5db; }
+        input {
+            width: 100%; padding: 12px; margin-bottom: 20px;
+            border-radius: 5px; border: 1px solid #4b5563;
+            background-color: #374151; color: white; font-size: 1rem;
+        }
+        input:focus { outline: none; border-color: #a78bfa; }
+        button {
+            width: 100%; padding: 12px; border: none; border-radius: 5px;
+            background-color: #8b5cf6; color: white; font-size: 1rem;
+            font-weight: bold; cursor: pointer; transition: background 0.3s;
+        }
+        button:hover { background-color: #7c3aed; }
+        .error { color: #ef4444; text-align: center; margin-bottom: 15px; display: none; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="registro-card">
+        <h1>📝 Crear Cuenta</h1>
+        <div id="error" class="error">Error al registrar usuario</div>
+        <form id="registroForm">
+            <label>Nombre completo</label>
+            <input type="text" id="nombre" required placeholder="Juan Perez">
+            
+            <label>Email</label>
+            <input type="email" id="email" required placeholder="juan@example.com">
+            
+            <label>Contraseña (mínimo 6 caracteres)</label>
+            <input type="password" id="password" required placeholder="******">
+            
+            <button type="submit">Registrarme</button>
+        </form>
+        <p style="text-align: center; margin-top: 15px; font-size: 0.9rem; color: #9ca3af;">
+            ¿Ya tienes cuenta? <a href="/" style="color: #a78bfa;">Inicia sesión</a>
+        </p>
+    </div>
+
+    <script>
+        document.getElementById('registroForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const errorDiv = document.getElementById('error');
+            errorDiv.style.display = 'none';
+
+            const nuevoUsuario = {
+                nombre: document.getElementById('nombre').value,
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value
+            };
+
+            try {
+                // Hacemos la petición POST a nuestra API de usuarios
+                const res = await fetch('/api/usuarios', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(nuevoUsuario)
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    alert('¡Usuario registrado exitosamente! Ahora puedes iniciar sesión 🚀');
+                    window.location.href = '/'; // Redirigir al login
+                } else {
+                    // Mostrar el primer error de validación que devuelva la API
+                    errorDiv.innerText = data.errors ? data.errors[0].msg : data.message;
+                    errorDiv.style.display = 'block';
+                }
+            } catch (error) {
+                alert('Error de conexión con el servidor');
+            }
+        });
+    </script>
+</body>
+</html>
